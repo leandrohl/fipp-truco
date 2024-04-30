@@ -1,0 +1,67 @@
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const nome = params.get('nome');
+    const codSala = params.get('codSala');
+    var socket = io({query: "codSala=" + codSala + "&nome=" + nome});
+    document.addEventListener("DOMContentLoaded", function() {
+
+        entrar();
+
+        socket.on('enviarMensagem', function(obj) {
+            document.getElementById("chat").innerHTML += `<div><b>${obj.participante}:</b> ${obj.texto}</div>`;
+        });
+
+        socket.on('entrar', function(obj) {   
+            document.getElementById("chat").innerHTML += `<div>participante ${obj.participante} entrou</div>`;
+        })
+
+        socket.on('sair', function(obj) {   
+            document.getElementById("chat").innerHTML += `<div>participante ${obj.participante} saiu</div>`;
+        })
+
+
+
+        document.getElementById("btnEnviar").addEventListener("click", function() {
+
+            let msg = document.getElementById("txtMsg").value;
+
+            if(msg != "") {
+                socket.emit("enviarMensagem", {texto: msg, participante: nome, codSala: codSala})
+                document.getElementById("txtMsg").value = "";
+            }
+            else {
+                alert("insira uma mensagem");
+            }
+        })
+        function entrar() {
+            fetch("http://localhost:5000/adicionar", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({nome: nome, sala: codSala})
+            })
+            .then(r=> {
+                return r.json();
+            })
+            .then(r=> {
+                socket.emit("entrar", { participante: nome, codSala: codSala});
+            })
+        }
+    })
+</script>
+
+<h1>Chat Online</h1>
+
+<div>
+    <h2>Bem vindo à sala!</h2>
+    <div id="chat">
+
+    </div>
+    <div>
+        <input type="text" id="txtMsg" placeholder="digite aqui sua mensagem">
+        <button id="btnEnviar">Enviar</button>
+    </div>
+</div>
